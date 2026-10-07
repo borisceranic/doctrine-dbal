@@ -1,7 +1,7 @@
 # Pull request texts, ready to post after maintainer feedback on the RFC issue
 
 Branches in the fork are stacked: B is based on A, and C on B. Upstream, A targets `4.5.x`, and B and C
-target `4.6.x` (rebase them onto it first). Replace `#RFC` and `#BUG` with the issue numbers of
+target `4.6.x` (rebase them onto it first; the fork has `4.6.x`). The 3.x backports at the end target `3.10.x`. Replace `#RFC` and `#BUG` with the issue numbers of
 `ISSUES.md` sections 1 and 2.
 
 ---
@@ -147,4 +147,89 @@ Tests: unit tests for every type × platform (round trip, declarations, comparis
 at precisions null/0/3/6, and migration from `datetime` to `datetime_precise`. Run on MySQL 8.4,
 MariaDB 11.4, PostgreSQL 17, SQL Server 2022, Oracle 23 and SQLite. Docs: `types.rst`,
 `known-vendor-issues.rst`, `UPGRADE.md`.
+```
+
+---
+
+# 3.x backports → `3.10.x`
+
+Same API as 4.x; differences are listed in RFC section 10. Open them only if maintainers want the
+feature on 3.x. A is a plain bug fix and is the most likely to be accepted.
+
+## 3.x A: `claude/fsp-3x-a-tolerant-reads` → `3.10.x`
+
+**Title:** [3.x] Tolerate fractional seconds when reading temporal types
+
+```markdown
+|      Q       |   A
+|------------- | -----------
+| Type         | bug
+| Fixed issues | #BUG (backport of #A)
+
+#### Summary
+
+Backport of #A. `time*` and `datetimetz*` threw a `ConversionException` on database values with
+fractional seconds, and `datetime*` only accepted them through the `new DateTime()` fallback. All
+temporal types now go through an internal `DateTimeParser`. It tries the platform format exactly as
+before, and only on failure retries with the fraction accounted for (truncated to 6 digits). Writes
+are unchanged.
+
+PHP 7.4 compatible. Tested against MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022 and SQLite.
+Oracle is skipped as in #A.
+```
+
+## 3.x B: `claude/fsp-3x-b-precision-introspection` → `3.10.x`
+
+**Title:** [3.x] Introspect and declare the fractional seconds precision of temporal columns
+
+```markdown
+|      Q       |   A
+|------------- | -----------
+| Type         | improvement
+| Fixed issues | backport of #B
+
+#### Summary
+
+Backport of #B, with the same `precision` option. Because 3.x `Column` defaults its precision to `10`
+(also when set to `null`), a precision of 10 on a date/time column means "not specified":
+* the declaration is unchanged;
+* the column matches an existing column of any fractional seconds precision.
+
+10 is outside every platform's fractional range except Db2's.
+
+Also needed on 3.x: `Comparator::diffColumn()` reports `precision` changes of temporal columns, since
+platforms (e.g. PostgreSQL) only alter the column type when it is listed.
+
+Introspection: MySQL from the column type, PostgreSQL from the type modifier, SQL Server from
+`scale`, Oracle from `DATA_SCALE`, Db2 from `SCALE`.
+
+Tested against MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022, Oracle 23 and SQLite. Db2 is
+unit-tested only.
+```
+
+## 3.x C: `claude/fsp-3x-c-precise-types` → `3.10.x`
+
+**Title:** [3.x] Add date/time types with fractional seconds
+
+```markdown
+|      Q       |   A
+|------------- | -----------
+| Type         | feature
+| Fixed issues | #2873 (backport of #C)
+
+#### Summary
+
+Backport of #C: `datetime_precise`, `datetimetz_precise`, `time_precise` and `_immutable` variants,
+`get*PreciseFormatString()` platform methods, and `new InitializeSession(true)` for Oracle.
+
+3.x specifics:
+* like `datetime_immutable`, the new types request a type comment, so introspection recognizes them on
+  platforms without inline comments;
+* Oracle `DATE` columns are introspected with precision 0.
+
+Known pre-existing 3.x limitation: on Oracle, altering a column to any commented type does not update
+the comment, so such a change is proposed again. The test skips only that convergence assertion on
+Oracle.
+
+Tested against MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022, Oracle 23 and SQLite.
 ```

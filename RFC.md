@@ -344,8 +344,66 @@ is the first real run.
 | B | `claude/fsp-b-precision-introspection` | `4.6.x` | precision introspection (schema managers and metadata providers), declarations honour precision, comparator rule; tests, `UPGRADE.md` |
 | C | `claude/fsp-c-precise-types` | `4.6.x` | six precise types, platform format methods, `FractionalSecondsType`, OCI8 session flag, docs (`types.rst`, `known-vendor-issues.rst`, `UPGRADE.md`) |
 
-A is a bug fix and could also go to `4.5.x` without B and C. Since `4.6.x` does not exist in the fork,
-all branches are based on `4.5.x` and will need a rebase onto `4.6.x` for B and C.
+A is a bug fix and could also go to `4.5.x` without B and C. All 4.x branches are based on `4.5.x`;
+B and C need a rebase onto `4.6.x` (which exists in the fork too) before opening their PRs.
+
+## 10. 3.x backport
+
+The same three changes exist for `3.10.x`, with the same API: the `precision` column option, the
+six type names and `Types` constants, the three platform format methods, the `@internal`
+`FractionalSecondsType` marker and the `InitializeSession` flag.
+
+| PR | Branch (fork) | Target |
+|---|---|---|
+| A | `claude/fsp-3x-a-tolerant-reads` | `3.10.x` |
+| B | `claude/fsp-3x-b-precision-introspection` | `3.10.x` (next minor, `UPGRADE.md` says 3.11) |
+| C | `claude/fsp-3x-c-precise-types` | `3.10.x` (next minor) |
+
+Realistically, 3.x is in maintenance. A is a bug fix and fits there. B and C are features, and
+maintainers may well refuse them for 3.x. They exist so the answer can be "yes" without more work.
+
+What 3.x forced to differ:
+
+* **Unspecified precision is `10`, not `null`.** 3.x `Column` defaults its precision to 10, and
+  `setPrecision(null)` stores 10. Rendering `$column['precision'] ?? 0` would turn every datetime
+  column into `DATETIME(10)`. A precision of 10 on a date/time column therefore means "not specified",
+  in declarations, in the comparator rule, and in the precise types' default. 10 is outside every
+  platform's fractional range except Db2's (up to 12). A Db2 `TIMESTAMP(10)` column is thus treated
+  as "any precision". The logic lives in one `@internal` `AbstractPlatform::getFractionalSecondsPrecision()`
+  and in `Comparator::diffColumn()`.
+* **`Comparator::diffColumn()` must report `precision`.** 3.x still builds `ColumnDiff::$changedProperties`
+  with it, and PostgreSQL only emits `ALTER … TYPE` when `precision` is listed. Without this, a changed
+  precision is detected but never applied.
+* **Type comments.** On platforms without inline comments, 3.x's `columnsEqual()` also compares type
+  identity, and introspection restores types from `(DC2Type:…)` comments. The precise types therefore
+  override the deprecated `requiresSQLCommentHint()` to return `true`, exactly like 3.x's own
+  `datetime_immutable`. With `disableTypeComments`, comparison works as in 4.x. #6631 does not exist in
+  3.x as long as type comments are on.
+* **Type hierarchy.** 3.x immutable types extend the mutable ones, and only `DateTimeType`/`DateTimeTzType`
+  implement `PhpDateTimeMappingType` (there is no `PhpTimeMappingType`). The comparator recognizes
+  temporal columns by `DateTimeType`, `DateTimeTzType` and `TimeType`. Mutable precise types document
+  `DateTimeInterface` returns like their 3.x parents, but only accept `DateTime` for writing.
+* **Oracle `DATE` columns** are introspected with precision 0. Otherwise `time_precise` with
+  precision 0, declared as `DATE`, would come back with the default precision 6.
+* **PHP 7.4 syntax** throughout: no union types, `match`, `readonly`, promoted properties,
+  `str_contains` or named arguments (`new InitializeSession(true)`).
+* **No test change needed** for `MySQLSchemaManagerTest::testColumnIntrospection`: on 3.x it doesn't
+  set `precision`.
+
+Pre-existing 3.x issues found on the way (not fixed, not caused by these changes):
+
+* On Oracle, a plain `time` column (`DATE`) is introspected as `date` and always produces a diff.
+  The B test leaves out `time` on Oracle.
+* On Oracle, altering a column to a commented type (e.g. `datetime` → `datetime_immutable`) does not
+  update the type comment, so the change is proposed again forever. C's migration test skips only the
+  convergence assertion on Oracle.
+* Locally, `DriverTest::testDriverOptions` and `LengthExpressionTest` "4-byte" fail on SQL Server on
+  plain `3.10.x` too (driver/server configuration of this environment).
+
+Verification: full `tests/Functional` on MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022,
+Oracle 23 and SQLite for all three 3.x branches; unit tests, `phpcs` and `phpstan` pass. Everything
+ran on PHP 8.3 only. PHP 7.4 compatibility relies on phpcs (`php_version` 70400) and on avoiding 8.x
+syntax; CI will be the first real 7.4 run.
 
 The branches are stacked: B is based on A, and C on B. Each PR links #2873, #5961 and #6631, restates
 the objection table of section 2, and includes the matrix of section 4.
