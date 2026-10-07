@@ -33,11 +33,14 @@ The `column['precision']` option is ignored by all of them.
 ### 1.3 Reads are inconsistent
 
 * `datetime`, `datetime_immutable`, `datetime_utc*`: `createFromFormat()` fails on a fraction and
-  falls back to `new DateTime($value)`. The fraction survives a read only through that slow fallback.
+  falls back to `new DateTime($value)`. The fraction survives a read only through that fallback, which
+  also accepts any `strtotime()` string. It is not slow on PHP 8.3, contrary to the `VarDateTimeType`
+  docblock (see the benchmark).
 * `datetimetz*`, `time*`: no fallback. A value with a fraction throws `InvalidFormat`. This is a plain
   bug: PostgreSQL returns `10:00:00.25` from any `TIME` column without a precision modifier, and
   `NOW()`/`CURRENT_TIMESTAMP` defaults produce fractions in `TIMESTAMPTZ` columns (#1515).
-* No parser handles more than 6 digits (SQL Server `TIME(7)`/`DATETIME2(7)`, Oracle `TIMESTAMP(9)`).
+* `createFromFormat()` cannot parse more than 6 digits (SQL Server `TIME(7)`/`DATETIMEOFFSET(7)`,
+  Oracle `TIMESTAMP(9)`). Only the `datetime*` fallback accepts them.
 * `VarDateTimeType`/`VarDateTimeImmutableType` are the documented workaround. They are not registered,
   only change reads, and the docs even suggest overriding `time` with them, which yields a full datetime.
 
@@ -132,14 +135,26 @@ The work splits into three PRs, each mergeable on its own (section 9).
 
 Every `datetime*`, `datetimetz*`, `datetime_utc*` and `time*` type:
 
-1. tries the platform format exactly as today (so the fast path and results are unchanged);
-2. if that fails and the value has a fractional part, cuts the fraction to 6 digits (truncation, like
-   Oracle's own `FF6` display) and retries with `.u` inserted after the seconds of the platform
-   format (or removed, if the platform format already has `.u` and the value has none);
+1. tries the platform format exactly as today, unless the value has a fraction the format does not
+   account for (a `.` in the value, no `.u` in the format), because the format is bound to fail;
+2. if that failed or was skipped, calls an internal `DateTimeParser`. It cuts the fraction to 6 digits
+   (truncation, like Oracle's own `FF6` display) and parses with `.u` inserted after the seconds of the
+   platform format (or removed, if the platform format has `.u` and the value has none);
 3. otherwise keeps today's behaviour (`new DateTime()` fallback for `datetime*`, `InvalidFormat` for
    the rest).
 
-There is no new public API. This is an internal helper used by the type classes.
+There is no new public API.
+
+The shape is driven by measurements (`benchmarks/fractional-seconds`, phpbench, 4.5.x vs. the branch):
+
+* Routing every value through the parser made values in the platform format 10-20% slower (one extra
+  function call against a ~0.8 µs native parse). Trying the format inline keeps them within the
+  benchmark's noise floor (about ±9%).
+* Failing first on a fraction is expensive with a timezone offset: `createFromFormat('Y-m-d H:i:sO')`
+  takes about 7.7 µs to reject `…59.123456+02`, because `O` tries to read the fraction as a timezone
+  name. Skipping the doomed attempt makes such values convert in about 1.3 µs (they threw before, in
+  about 8.4 µs).
+* `datetime` values with fractions convert about 10% faster than through the `new DateTime()` fallback.
 
 `VarDateTime*`: **keep, not deprecated**. After PR A they are unnecessary for fractions, but they still
 accept arbitrary `strtotime()` formats some users rely on. The docs stop recommending them for

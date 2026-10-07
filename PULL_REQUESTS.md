@@ -19,22 +19,33 @@ target `4.6.x` (rebase them onto it first; the fork has `4.6.x`). The 3.x backpo
 #### Summary
 
 `time*` and `datetimetz*` threw `InvalidFormat` on database values with fractional seconds, and
-`datetime*` only accepted them through the slow `new DateTime()` fallback. Columns return fractions
+`datetime*` only accepted them through the `new DateTime()` fallback. Columns return fractions
 whenever they allow them: PostgreSQL `TIME`/`TIMESTAMP` without a modifier, `NOW()` defaults,
 hand-widened `DATETIME(6)`, SQL Server `TIME(7)`/`DATETIMEOFFSET(7)`, Oracle `TIMESTAMP(9)`.
 
-All temporal types (including `datetime_utc*`) now go through an internal `DateTimeParser`, which:
+All temporal types (including `datetime_utc*`):
 
-1. calls `createFromFormat()` with the platform format exactly as before. The fast path and its
-   results are unchanged;
-2. only if that fails, retries with `.u` added after the seconds (or removed, when the platform format
-   has `.u` and the value has no fraction), after truncating the fraction to 6 digits.
+1. call `createFromFormat()` with the platform format as before, unless the value has a fraction the
+   format does not account for;
+2. if that failed or was skipped, call an internal `DateTimeParser`, which parses with `.u` added after
+   the seconds (or removed, when the platform format has `.u` and the value has none), after
+   truncating the fraction to 6 digits.
 
 Writes are untouched. No public API is added.
 
+Performance (phpbench, 4.5.x vs. this branch, PHP 8.3, per conversion):
+* values in the platform format: within the noise floor (+3% to +10%, A/A control up to ±9%);
+* `datetimetz` with fractions and an offset: 1.27 µs, where 4.5.x threw in 8.45 µs;
+* `datetime` with fractions: 10% faster than the `new DateTime()` fallback.
+
+A first version that sent every value through the parser was 10-20% slower on the common path; the
+types therefore try the platform format themselves. The benchmark and its results are outside this PR,
+because DBAL has no benchmark setup: <link to benchmarks/fractional-seconds>.
+
 Tests:
 * `FractionalSecondsConversionTest`: every temporal type × every platform, with values shaped like
-  each database returns them. 60 of 172 cases fail before the change.
+  each database returns them. Run locally against the unchanged 4.5.x types, 60 of the 172 cases
+  error.
 * `DateTimeParserTest`: edge cases (9 digits, missing fraction, offsets, escaped `s`, invalid input).
 * `Functional\Types\FractionalSecondsReadTest`: reads from `DATETIME(6)`/`TIME(6)`/`TIMESTAMPTZ(6)`/
   `DATETIME2(7)`… columns. Run on MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022 and SQLite.
@@ -168,11 +179,12 @@ Only the bug fix is backported; see RFC section 10 for the reasoning.
 #### Summary
 
 Backport of #A. `time*` and `datetimetz*` threw a `ConversionException` on database values with
-fractional seconds, and `datetime*` only accepted them through the `new DateTime()` fallback. All
-temporal types now go through an internal `DateTimeParser`. It tries the platform format exactly as
-before, and only on failure retries with the fraction accounted for (truncated to 6 digits). Writes
-are unchanged.
+fractional seconds, and `datetime*` only accepted them through the `new DateTime()` fallback. The
+types now try the platform format as before, unless the value has a fraction the format does not
+account for, and otherwise fall back to an internal `DateTimeParser` that parses the fraction
+(truncated to 6 digits). Writes are unchanged. The performance reasoning and numbers are in #A (the
+benchmark ran on 4.x only).
 
-PHP 7.4 compatible. Tested against MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022 and SQLite.
-Oracle is skipped as in #A.
+PHP 7.4 compatible syntax; tested on PHP 8.3 against MySQL 8.4, MariaDB 11.4, PostgreSQL 17,
+SQL Server 2022, Oracle 23 and SQLite. The Oracle read test is skipped as in #A.
 ```

@@ -44,7 +44,7 @@ measurements: <RFC link>
   precision to 0 (`TIMESTAMP(0)`, `DATETIME`, `TIME(0)`). The `precision` column option is ignored.
 * `time*` and `datetimetz*` throw `InvalidFormat` when the database returns a fraction (PostgreSQL
   `TIME` without a modifier, `NOW()` defaults, SQL Server `TIME(7)`, hand-widened columns).
-  `datetime*` only survive through the `new DateTime()` fallback.
+  `datetime*` only survive through the `new DateTime()` fallback, which accepts any `strtotime()` string.
 * Schema managers do not read the fractional precision. SQL Server even reports the column length in
   characters (26) as `precision`. So a `DATETIME(6)` column compares as `DATETIME`.
 * Databases disagree on excess digits. Writing `2026-12-31 23:59:59.999999` into a precision-0 column
@@ -158,8 +158,9 @@ PostgreSQL:
 `Could not convert database value "10:00:00.25" to Doctrine Type Doctrine\DBAL\Types\TimeType. Expected format "H:i:s".`
 The same happens for `datetimetz` with `2026-10-07 23:59:59.123456+00`.
 
-`datetime` accepts such values only through `new DateTime($value)`, which is about twice as slow, and
-nothing accepts more than 6 fractional digits.
+`datetime` accepts such values only through the `new DateTime($value)` fallback, which also accepts any
+`strtotime()` string. `createFromFormat()` cannot parse more than 6 fractional digits, which SQL Server
+`TIME(7)`/`DATETIMEOFFSET(7)` and Oracle `TIMESTAMP(9)` return.
 
 #### Expected behaviour
 
