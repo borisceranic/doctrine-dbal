@@ -347,63 +347,38 @@ is the first real run.
 A is a bug fix and could also go to `4.5.x` without B and C. All 4.x branches are based on `4.5.x`;
 B and C need a rebase onto `4.6.x` (which exists in the fork too) before opening their PRs.
 
-## 10. 3.x backport
-
-The same three changes exist for `3.10.x`, with the same API: the `precision` column option, the
-six type names and `Types` constants, the three platform format methods, the `@internal`
-`FractionalSecondsType` marker and the `InitializeSession` flag.
-
-| PR | Branch (fork) | Target |
-|---|---|---|
-| A | `claude/fsp-3x-a-tolerant-reads` | `3.10.x` |
-| B | `claude/fsp-3x-b-precision-introspection` | `3.10.x` (next minor, `UPGRADE.md` says 3.11) |
-| C | `claude/fsp-3x-c-precise-types` | `3.10.x` (next minor) |
-
-Realistically, 3.x is in maintenance. A is a bug fix and fits there. B and C are features, and
-maintainers may well refuse them for 3.x. They exist so the answer can be "yes" without more work.
-
-What 3.x forced to differ:
-
-* **Unspecified precision is `10`, not `null`.** 3.x `Column` defaults its precision to 10, and
-  `setPrecision(null)` stores 10. Rendering `$column['precision'] ?? 0` would turn every datetime
-  column into `DATETIME(10)`. A precision of 10 on a date/time column therefore means "not specified",
-  in declarations, in the comparator rule, and in the precise types' default. 10 is outside every
-  platform's fractional range except Db2's (up to 12). A Db2 `TIMESTAMP(10)` column is thus treated
-  as "any precision". The logic lives in one `@internal` `AbstractPlatform::getFractionalSecondsPrecision()`
-  and in `Comparator::diffColumn()`.
-* **`Comparator::diffColumn()` must report `precision`.** 3.x still builds `ColumnDiff::$changedProperties`
-  with it, and PostgreSQL only emits `ALTER … TYPE` when `precision` is listed. Without this, a changed
-  precision is detected but never applied.
-* **Type comments.** On platforms without inline comments, 3.x's `columnsEqual()` also compares type
-  identity, and introspection restores types from `(DC2Type:…)` comments. The precise types therefore
-  override the deprecated `requiresSQLCommentHint()` to return `true`, exactly like 3.x's own
-  `datetime_immutable`. With `disableTypeComments`, comparison works as in 4.x. #6631 does not exist in
-  3.x as long as type comments are on.
-* **Type hierarchy.** 3.x immutable types extend the mutable ones, and only `DateTimeType`/`DateTimeTzType`
-  implement `PhpDateTimeMappingType` (there is no `PhpTimeMappingType`). The comparator recognizes
-  temporal columns by `DateTimeType`, `DateTimeTzType` and `TimeType`. Mutable precise types document
-  `DateTimeInterface` returns like their 3.x parents, but only accept `DateTime` for writing.
-* **Oracle `DATE` columns** are introspected with precision 0. Otherwise `time_precise` with
-  precision 0, declared as `DATE`, would come back with the default precision 6.
-* **PHP 7.4 syntax** throughout: no union types, `match`, `readonly`, promoted properties,
-  `str_contains` or named arguments (`new InitializeSession(true)`).
-* **No test change needed** for `MySQLSchemaManagerTest::testColumnIntrospection`: on 3.x it doesn't
-  set `precision`.
-
-Pre-existing 3.x issues found on the way (not fixed, not caused by these changes):
-
-* On Oracle, a plain `time` column (`DATE`) is introspected as `date` and always produces a diff.
-  The B test leaves out `time` on Oracle.
-* On Oracle, altering a column to a commented type (e.g. `datetime` → `datetime_immutable`) does not
-  update the type comment, so the change is proposed again forever. C's migration test skips only the
-  convergence assertion on Oracle.
-* Locally, `DriverTest::testDriverOptions` and `LengthExpressionTest` "4-byte" fail on SQL Server on
-  plain `3.10.x` too (driver/server configuration of this environment).
-
-Verification: full `tests/Functional` on MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022,
-Oracle 23 and SQLite for all three 3.x branches; unit tests, `phpcs` and `phpstan` pass. Everything
-ran on PHP 8.3 only. PHP 7.4 compatibility relies on phpcs (`php_version` 70400) and on avoiding 8.x
-syntax; CI will be the first real 7.4 run.
-
 The branches are stacked: B is based on A, and C on B. Each PR links #2873, #5961 and #6631, restates
 the objection table of section 2, and includes the matrix of section 4.
+
+## 10. 3.x backport: A only
+
+Only the bug fix is backported: `claude/fsp-3x-a-tolerant-reads` → `3.10.x`. It is the same internal
+`DateTimeParser` in PHP 7.4 syntax, used by the same six types; there is no new API.
+
+Why A, and only A (Packagist, `stats/major/{2,3,4}.json`, average downloads per day):
+
+| Month | 2.x | 3.x | 4.x | 3.x share |
+|---|---|---|---|---|
+| 2024-09 | 58k | 174k | 23k | 68% |
+| 2025-09 | 39k | 144k | 54k | 61% |
+| 2026-03 | 39k | 145k | 88k | 53% |
+| 2026-09 | 41k | 175k | 178k | 44% |
+
+* 3.x is still about half of all DBAL downloads, and flat in absolute terms. 4.x only overtook it in
+  September 2026.
+* 72% of 3.x downloads are 3.10 (2026-09), so a 3.10.x patch release reaches most 3.x users.
+* B and C are features. 3.x is in maintenance, and much of its traffic likely comes from stacks that are
+  themselves in maintenance (e.g. Laravel 10, ORM 2). On 3.x they would also need workarounds: `Column`
+  defaults to precision 10 instead of `null`, `Comparator::diffColumn()` must report precision, and the
+  new types need type comments. Not proposed unless maintainers ask.
+
+Verification: full `tests/Functional` on MySQL 8.4, MariaDB 11.4, PostgreSQL 17, SQL Server 2022,
+Oracle 23 (the read test skips there, as on 4.x) and SQLite; unit tests, `phpcs` and `phpstan` pass. It
+ran on PHP 8.3 only. PHP 7.4 compatibility rests on phpcs (`php_version` 70400) and on avoiding 8.x
+syntax.
+
+Pre-existing 3.x issues noticed while prototyping B and C (unrelated to A, not fixed):
+
+* On Oracle, a plain `time` column (`DATE`) is introspected as `date` and always produces a diff.
+* On Oracle, altering a column to a commented type (e.g. `datetime` → `datetime_immutable`) does not
+  update the type comment, so the change is proposed again forever.
