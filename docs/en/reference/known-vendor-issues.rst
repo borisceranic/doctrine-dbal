@@ -20,41 +20,20 @@ the format:
     2010-10-10 10:10:10 (Y-m-d H:i:s)
 
 However if you save a value with microseconds it will return the
-full representation:
+full representation, without trailing zeros:
 
 ::
 
-    2010-10-10 10:10:10.123456 (Y-m-d H:i:s.u)
+    2010-10-10 10:10:10.12 (Y-m-d H:i:s.u)
 
-Using the DateTime, DateTimeTz or Time type (and immutable variants) with microseconds
-enabled columns can lead to errors because internally types expect
-the exact format 'Y-m-d H:i:s' in combination with
-``DateTime::createFromFormat()``. This method is twice as fast as
-passing the date to the constructor of ``DateTime``.
-
-This is why Doctrine always wants to create the time related types
+The DateTime, DateTimeTz and Time types (and immutable variants) accept
+both representations when reading. They still write values without
+microseconds, which is why Doctrine creates the time related types
 without microseconds:
 
 -  DateTime to ``TIMESTAMP(0) WITHOUT TIME ZONE``
 -  DateTimeTz to ``TIMESTAMP(0) WITH TIME ZONE``
 -  Time to ``TIME(0) WITHOUT TIME ZONE``
-
-If you do not let Doctrine create the date column types and rather
-use types with microseconds you have replace the "DateTime",
-"DateTimeTz" and "Time" types (and immutable variants) with a more
-liberal DateTime parser that detects the format automatically:
-
-::
-
-    use Doctrine\DBAL\Types\Type;
-
-    Type::overrideType('datetime', 'Doctrine\DBAL\Types\VarDateTimeType');
-    Type::overrideType('datetimetz', 'Doctrine\DBAL\Types\VarDateTimeType');
-    Type::overrideType('time', 'Doctrine\DBAL\Types\VarDateTimeType');
-
-    Type::overrideType('datetime_immutable', 'Doctrine\DBAL\Types\VarDateTimeImmutableType');
-    Type::overrideType('datetimetz_immutable', 'Doctrine\DBAL\Types\VarDateTimeImmutableType');
-    Type::overrideType('time_immutable', 'Doctrine\DBAL\Types\VarDateTimeImmutableType');
 
 Timezones and DateTimeTz
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -169,23 +148,7 @@ multiple NULLs in a unique column.
 DateTime, DateTimeTz and Time Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SQL Server has a variable return format for the datatype DATETIME(n)
-if microseconds are allowed (n > 0). Whenever you save
-a value with microseconds = 0.
-
-If you do not let Doctrine create the date column types and rather
-use types with microseconds you have replace the "DateTime",
-"DateTimeTz" and "Time" types (and immutable variants) with a more
-liberal DateTime parser that detects the format automatically:
-
-::
-
-    use Doctrine\DBAL\Types\Type;
-
-    Type::overrideType('datetime', 'Doctrine\DBAL\Types\VarDateTime');
-    Type::overrideType('datetimetz', 'Doctrine\DBAL\Types\VarDateTime');
-    Type::overrideType('time', 'Doctrine\DBAL\Types\VarDateTime');
-
-    Type::overrideType('datetime_immutable', 'Doctrine\DBAL\Types\VarDateTimeImmutableType');
-    Type::overrideType('datetimetz_immutable', 'Doctrine\DBAL\Types\VarDateTimeImmutableType');
-    Type::overrideType('time_immutable', 'Doctrine\DBAL\Types\VarDateTimeImmutableType');
+SQL Server returns as many fractional digits as the column allows,
+e.g. 7 for ``DATETIME2(7)`` and ``TIME(7)``. The DateTime, DateTimeTz and
+Time types (and immutable variants) accept such values when reading and
+truncate them to microseconds, the maximum precision of PHP's ``DateTime``.

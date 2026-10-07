@@ -95,7 +95,7 @@ class DateTimeType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTime::createFromFormat($platform->getDateTimeFormatString(), $value);
+        $dateTime = DateTimeParser::parse(DateTime::class, $platform->getDateTimeFormatString(), $value);
 
         if ($dateTime !== false) {
             return $dateTime;

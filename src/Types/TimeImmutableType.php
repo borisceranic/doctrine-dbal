@@ -60,7 +60,7 @@ class TimeImmutableType extends TimeType
             return $value;
         }
 
-        $dateTime = DateTimeImmutable::createFromFormat('!' . $platform->getTimeFormatString(), $value);
+        $dateTime = DateTimeParser::parse(DateTimeImmutable::class, '!' . $platform->getTimeFormatString(), $value);
 
         if ($dateTime !== false) {
             return $dateTime;
