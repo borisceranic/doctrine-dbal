@@ -9,6 +9,8 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Exception\InvalidFormat;
 use Doctrine\DBAL\Types\Exception\InvalidType;
 
+use function str_contains;
+
 /**
  * Type that maps an SQL TIME to a PHP DateTime object.
  */
@@ -55,7 +57,17 @@ class TimeType extends Type implements PhpTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeParser::parse(DateTime::class, '!' . $platform->getTimeFormatString(), $value);
+        $format = '!' . $platform->getTimeFormatString();
+
+        // see DateTimeParser for why the format is tried here, and skipped for a fraction it does not account for
+        $dateTime = str_contains($value, '.') && ! str_contains($format, '.u')
+            ? false
+            : DateTime::createFromFormat($format, $value);
+
+        if ($dateTime === false) {
+            $dateTime = DateTimeParser::parse(DateTime::class, $format, $value);
+        }
+
         if ($dateTime !== false) {
             return $dateTime;
         }

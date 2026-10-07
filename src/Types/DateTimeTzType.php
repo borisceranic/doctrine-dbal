@@ -9,6 +9,8 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Exception\InvalidFormat;
 use Doctrine\DBAL\Types\Exception\InvalidType;
 
+use function str_contains;
+
 /**
  * DateTime type accepting additional information about timezone offsets.
  *
@@ -73,7 +75,17 @@ class DateTimeTzType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeParser::parse(DateTime::class, $platform->getDateTimeTzFormatString(), $value);
+        $format = $platform->getDateTimeTzFormatString();
+
+        // see DateTimeParser for why the format is tried here, and skipped for a fraction it does not account for
+        $dateTime = str_contains($value, '.') && ! str_contains($format, '.u')
+            ? false
+            : DateTime::createFromFormat($format, $value);
+
+        if ($dateTime === false) {
+            $dateTime = DateTimeParser::parse(DateTime::class, $format, $value);
+        }
+
         if ($dateTime !== false) {
             return $dateTime;
         }

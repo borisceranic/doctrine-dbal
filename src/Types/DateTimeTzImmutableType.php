@@ -9,6 +9,8 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Exception\InvalidFormat;
 use Doctrine\DBAL\Types\Exception\InvalidType;
 
+use function str_contains;
+
 /**
  * Immutable type of {@see DateTimeTzType}.
  */
@@ -59,7 +61,16 @@ class DateTimeTzImmutableType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeParser::parse(DateTimeImmutable::class, $platform->getDateTimeTzFormatString(), $value);
+        $format = $platform->getDateTimeTzFormatString();
+
+        // see DateTimeParser for why the format is tried here, and skipped for a fraction it does not account for
+        $dateTime = str_contains($value, '.') && ! str_contains($format, '.u')
+            ? false
+            : DateTimeImmutable::createFromFormat($format, $value);
+
+        if ($dateTime === false) {
+            $dateTime = DateTimeParser::parse(DateTimeImmutable::class, $format, $value);
+        }
 
         if ($dateTime !== false) {
             return $dateTime;
