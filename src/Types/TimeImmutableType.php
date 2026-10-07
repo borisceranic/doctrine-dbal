@@ -59,7 +59,7 @@ class TimeImmutableType extends Type implements PhpTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeImmutable::createFromFormat('!' . $platform->getTimeFormatString(), $value);
+        $dateTime = DateTimeParser::parse(DateTimeImmutable::class, '!' . $platform->getTimeFormatString(), $value);
 
         if ($dateTime !== false) {
             return $dateTime;

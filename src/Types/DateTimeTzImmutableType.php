@@ -59,7 +59,7 @@ class DateTimeTzImmutableType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeImmutable::createFromFormat($platform->getDateTimeTzFormatString(), $value);
+        $dateTime = DateTimeParser::parse(DateTimeImmutable::class, $platform->getDateTimeTzFormatString(), $value);
 
         if ($dateTime !== false) {
             return $dateTime;

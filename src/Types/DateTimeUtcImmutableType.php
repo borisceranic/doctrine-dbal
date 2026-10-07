@@ -68,7 +68,8 @@ class DateTimeUtcImmutableType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeImmutable::createFromFormat(
+        $dateTime = DateTimeParser::parse(
+            DateTimeImmutable::class,
             $platform->getDateTimeFormatString(),
             $value,
             self::getUtc(),

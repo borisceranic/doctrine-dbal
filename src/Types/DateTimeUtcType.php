@@ -68,7 +68,8 @@ class DateTimeUtcType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTime::createFromFormat(
+        $dateTime = DateTimeParser::parse(
+            DateTime::class,
             $platform->getDateTimeFormatString(),
             $value,
             self::getUtc(),

@@ -60,7 +60,7 @@ class DateTimeImmutableType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeImmutable::createFromFormat($platform->getDateTimeFormatString(), $value);
+        $dateTime = DateTimeParser::parse(DateTimeImmutable::class, $platform->getDateTimeFormatString(), $value);
 
         if ($dateTime !== false) {
             return $dateTime;
