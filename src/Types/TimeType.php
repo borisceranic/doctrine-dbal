@@ -9,6 +9,7 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\Deprecations\Deprecation;
 
 use function get_class;
+use function strpos;
 
 /**
  * Type that maps an SQL TIME to a PHP DateTime object.
@@ -90,7 +91,17 @@ class TimeType extends Type
             return $value;
         }
 
-        $dateTime = DateTimeParser::parse(DateTime::class, '!' . $platform->getTimeFormatString(), $value);
+        $format = '!' . $platform->getTimeFormatString();
+
+        // see DateTimeParser for why the format is tried here, and skipped for a fraction it does not account for
+        $dateTime = strpos($value, '.') !== false && strpos($format, '.u') === false
+            ? false
+            : DateTime::createFromFormat($format, $value);
+
+        if ($dateTime === false) {
+            $dateTime = DateTimeParser::parse(DateTime::class, $format, $value);
+        }
+
         if ($dateTime !== false) {
             return $dateTime;
         }

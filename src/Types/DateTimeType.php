@@ -10,6 +10,7 @@ use Doctrine\Deprecations\Deprecation;
 use Exception;
 
 use function get_class;
+use function strpos;
 
 /**
  * Type that maps an SQL DATETIME/TIMESTAMP to a PHP DateTime object.
@@ -95,7 +96,16 @@ class DateTimeType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeParser::parse(DateTime::class, $platform->getDateTimeFormatString(), $value);
+        $format = $platform->getDateTimeFormatString();
+
+        // see DateTimeParser for why the format is tried here, and skipped for a fraction it does not account for
+        $dateTime = strpos($value, '.') !== false && strpos($format, '.u') === false
+            ? false
+            : DateTime::createFromFormat($format, $value);
+
+        if ($dateTime === false) {
+            $dateTime = DateTimeParser::parse(DateTime::class, $format, $value);
+        }
 
         if ($dateTime !== false) {
             return $dateTime;

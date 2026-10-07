@@ -9,6 +9,7 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\Deprecations\Deprecation;
 
 use function get_class;
+use function strpos;
 
 /**
  * DateTime type accepting additional information about timezone offsets.
@@ -108,7 +109,17 @@ class DateTimeTzType extends Type implements PhpDateTimeMappingType
             return $value;
         }
 
-        $dateTime = DateTimeParser::parse(DateTime::class, $platform->getDateTimeTzFormatString(), $value);
+        $format = $platform->getDateTimeTzFormatString();
+
+        // see DateTimeParser for why the format is tried here, and skipped for a fraction it does not account for
+        $dateTime = strpos($value, '.') !== false && strpos($format, '.u') === false
+            ? false
+            : DateTime::createFromFormat($format, $value);
+
+        if ($dateTime === false) {
+            $dateTime = DateTimeParser::parse(DateTime::class, $format, $value);
+        }
+
         if ($dateTime !== false) {
             return $dateTime;
         }

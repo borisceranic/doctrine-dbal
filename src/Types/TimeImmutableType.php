@@ -6,6 +6,8 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\Deprecations\Deprecation;
 
+use function strpos;
+
 /**
  * Immutable type of {@see TimeType}.
  */
@@ -60,7 +62,16 @@ class TimeImmutableType extends TimeType
             return $value;
         }
 
-        $dateTime = DateTimeParser::parse(DateTimeImmutable::class, '!' . $platform->getTimeFormatString(), $value);
+        $format = '!' . $platform->getTimeFormatString();
+
+        // see DateTimeParser for why the format is tried here, and skipped for a fraction it does not account for
+        $dateTime = strpos($value, '.') !== false && strpos($format, '.u') === false
+            ? false
+            : DateTimeImmutable::createFromFormat($format, $value);
+
+        if ($dateTime === false) {
+            $dateTime = DateTimeParser::parse(DateTimeImmutable::class, $format, $value);
+        }
 
         if ($dateTime !== false) {
             return $dateTime;
