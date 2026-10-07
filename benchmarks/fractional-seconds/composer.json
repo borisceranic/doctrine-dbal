@@ -1,0 +1,13 @@
+{
+    "name": "doctrine-dbal-benchmarks/fractional-seconds",
+    "description": "Compares temporal type conversion of two doctrine/dbal checkouts",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "phpbench/phpbench": "^1.4"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

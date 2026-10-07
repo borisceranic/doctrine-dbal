@@ -1,0 +1,16 @@
+{
+    "$schema": "./vendor/phpbench/phpbench/phpbench.schema.json",
+    "runner.bootstrap": "bootstrap.php",
+    "runner.path": "src",
+    "runner.file_pattern": "*Bench.php",
+    "runner.php_config": {
+        "opcache.enable_cli": 1,
+        "zend.assertions": -1
+    },
+    "report.generators": {
+        "compare": {
+            "extends": "aggregate",
+            "cols": ["subject", "set", "revs", "its", "mem_peak", "mode", "rstdev"]
+        }
+    }
+}
