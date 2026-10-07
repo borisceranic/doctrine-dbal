@@ -40,6 +40,8 @@ use Doctrine\DBAL\TransactionIsolationLevel;
 use Doctrine\DBAL\Types;
 use Doctrine\DBAL\Types\Exception\TypeNotFound;
 use Doctrine\DBAL\Types\Exception\TypesException;
+use Doctrine\DBAL\Types\PhpDateTimeMappingType;
+use Doctrine\DBAL\Types\PhpTimeMappingType;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\Deprecations\Deprecation;
 
@@ -2467,6 +2469,13 @@ abstract class AbstractPlatform
         $column1Array['columnDefinition'] = null;
         $column2Array['columnDefinition'] = null;
 
+        // an unspecified fractional seconds precision accepts whatever precision the other column has
+        if ($column1->getPrecision() === null && $this->isTemporalColumn($column2Array)) {
+            $column1Array['precision'] = $column2->getPrecision();
+        } elseif ($column2->getPrecision() === null && $this->isTemporalColumn($column1Array)) {
+            $column2Array['precision'] = $column1->getPrecision();
+        }
+
         if (
             $this->getColumnDeclarationSQL('', $column1Array)
             !== $this->getColumnDeclarationSQL('', $column2Array)
@@ -2480,6 +2489,14 @@ abstract class AbstractPlatform
         }
 
         return $column1->getComment() === $column2->getComment();
+    }
+
+    /** @param ColumnProperties $column */
+    private function isTemporalColumn(array $column): bool
+    {
+        $type = $this->getColumnTypeOrNull($column);
+
+        return $type instanceof PhpDateTimeMappingType || $type instanceof PhpTimeMappingType;
     }
 
     /**

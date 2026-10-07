@@ -618,7 +618,7 @@ class PostgreSQLPlatform extends AbstractPlatform
      */
     public function getDateTimeTypeDeclarationSQL(array $column): string
     {
-        return 'TIMESTAMP(0) WITHOUT TIME ZONE';
+        return 'TIMESTAMP(' . ($column['precision'] ?? 0) . ') WITHOUT TIME ZONE';
     }
 
     /**
@@ -626,7 +626,7 @@ class PostgreSQLPlatform extends AbstractPlatform
      */
     public function getDateTimeTzTypeDeclarationSQL(array $column): string
     {
-        return 'TIMESTAMP(0) WITH TIME ZONE';
+        return 'TIMESTAMP(' . ($column['precision'] ?? 0) . ') WITH TIME ZONE';
     }
 
     /**
@@ -642,7 +642,7 @@ class PostgreSQLPlatform extends AbstractPlatform
      */
     public function getTimeTypeDeclarationSQL(array $column): string
     {
-        return 'TIME(0) WITHOUT TIME ZONE';
+        return 'TIME(' . ($column['precision'] ?? 0) . ') WITHOUT TIME ZONE';
     }
 
     /**

@@ -78,6 +78,11 @@ class DB2SchemaManager extends AbstractSchemaManager
                 $scale     = $tableColumn['scale'];
                 $precision = $tableColumn['length'];
                 break;
+
+            case 'timestamp':
+                // the scale of temporal types is the fractional seconds precision
+                $precision = (int) $tableColumn['scale'];
+                break;
         }
 
         $options = [

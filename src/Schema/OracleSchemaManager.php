@@ -169,6 +169,12 @@ class OracleSchemaManager extends AbstractSchemaManager
                 $length = (int) $tableColumn['char_length'];
                 $fixed  = true;
                 break;
+
+            case 'timestamp':
+            case 'timestamptz':
+                // the scale of temporal types is the fractional seconds precision
+                $precision = $scale;
+                break;
         }
 
         $options = [

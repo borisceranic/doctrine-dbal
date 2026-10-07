@@ -189,10 +189,10 @@ abstract class AbstractMySQLPlatform extends AbstractPlatform
                 'The "version" column platform option is deprecated.',
             );
 
-            return 'TIMESTAMP';
+            return 'TIMESTAMP' . $this->getFractionalSecondsPrecisionSQLSnippet($column);
         }
 
-        return 'DATETIME';
+        return 'DATETIME' . $this->getFractionalSecondsPrecisionSQLSnippet($column);
     }
 
     /**
@@ -208,7 +208,21 @@ abstract class AbstractMySQLPlatform extends AbstractPlatform
      */
     public function getTimeTypeDeclarationSQL(array $column): string
     {
-        return 'TIME';
+        return 'TIME' . $this->getFractionalSecondsPrecisionSQLSnippet($column);
+    }
+
+    /**
+     * MySQL defaults to whole seconds, so a precision of zero is not rendered.
+     *
+     * @param array<string, mixed> $column
+     */
+    private function getFractionalSecondsPrecisionSQLSnippet(array $column): string
+    {
+        if (! isset($column['precision']) || $column['precision'] === 0) {
+            return '';
+        }
+
+        return '(' . $column['precision'] . ')';
     }
 
     /**

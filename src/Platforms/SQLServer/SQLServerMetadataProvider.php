@@ -216,6 +216,16 @@ final readonly class SQLServerMetadataProvider implements MetadataProvider
                 }
 
                 break;
+
+            case 'datetime':
+            case 'datetime2':
+            case 'datetimeoffset':
+            case 'smalldatetime':
+            case 'time':
+                // the precision of temporal types is their length in characters, the scale is the fractional
+                // seconds precision
+                $precision = $scale;
+                break;
         }
 
         $type = $this->platform->getDoctrineTypeMapping($dbType);

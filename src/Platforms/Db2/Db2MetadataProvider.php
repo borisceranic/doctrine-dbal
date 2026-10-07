@@ -191,6 +191,11 @@ final readonly class Db2MetadataProvider implements MetadataProvider
                     ->setPrecision($length)
                     ->setScale($scale);
                 break;
+
+            case 'timestamp':
+                // the scale of temporal types is the fractional seconds precision
+                $editor->setPrecision($scale);
+                break;
         }
 
         $editor

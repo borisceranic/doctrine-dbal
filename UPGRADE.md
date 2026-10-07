@@ -6,6 +6,24 @@ awareness about deprecated code.
 - Use of our low-overhead runtime deprecation API, details:
   https://github.com/doctrine/deprecations/
 
+# Upgrade to 4.6
+
+## BC BREAK: the `precision` of date/time columns is honoured
+
+The `precision` column option is now used as the fractional seconds precision of `datetime`, `datetimetz` and `time`
+columns (and their immutable and UTC variants). Previously it was ignored for these types.
+
+If a mapping sets `precision` on such a column, the next schema comparison will propose to change the column, e.g.
+from `DATETIME` to `DATETIME(6)` on MySQL. On SQL Server, a precision below 6 narrows the default `DATETIME2(6)` and
+`DATETIMEOFFSET(6)` columns, and on Oracle a `time` column with a precision above 0 becomes a `TIMESTAMP`. Remove the
+option to keep the previous declaration.
+
+A column whose `precision` is not specified (`null`) is declared as before, and is considered equal to an existing
+column of any fractional seconds precision. Existing columns with fractional seconds are therefore not narrowed.
+
+Schema managers now report the fractional seconds precision of date/time columns via `Column::getPrecision()`. On SQL
+Server, it was previously the length of the column in characters.
+
 # Upgrade to 4.5
 
 ## Deprecated not implementing unique constraint introspection in `MetadataProvider`

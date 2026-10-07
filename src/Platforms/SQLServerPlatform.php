@@ -950,7 +950,7 @@ class SQLServerPlatform extends AbstractPlatform
      */
     public function getDateTimeTzTypeDeclarationSQL(array $column): string
     {
-        return 'DATETIMEOFFSET(6)';
+        return 'DATETIMEOFFSET(' . ($column['precision'] ?? 6) . ')';
     }
 
     protected function getCharTypeDeclarationSQLSnippet(?int $length): string
@@ -1012,9 +1012,7 @@ class SQLServerPlatform extends AbstractPlatform
      */
     public function getDateTimeTypeDeclarationSQL(array $column): string
     {
-        // 3 - microseconds precision length
-        // http://msdn.microsoft.com/en-us/library/ms187819.aspx
-        return 'DATETIME2(6)';
+        return 'DATETIME2(' . ($column['precision'] ?? 6) . ')';
     }
 
     /**
@@ -1030,7 +1028,7 @@ class SQLServerPlatform extends AbstractPlatform
      */
     public function getTimeTypeDeclarationSQL(array $column): string
     {
-        return 'TIME(0)';
+        return 'TIME(' . ($column['precision'] ?? 0) . ')';
     }
 
     /**

@@ -263,6 +263,14 @@ SQL,
                 }
 
                 break;
+
+            case 'timestamp':
+            case 'timestamptz':
+            case 'time':
+            case 'timetz':
+                // without a modifier, the precision is limited only by the storage format, i.e. microseconds
+                $precision = $this->parseColumnTypeParameters($completeType)[0] ?? 6;
+                break;
         }
 
         if ($dbType === 'bpchar') {

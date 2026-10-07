@@ -227,6 +227,12 @@ final readonly class OracleMetadataProvider implements MetadataProvider
                     ->setLength((int) $characterLength)
                     ->setFixed(true);
                 break;
+
+            case 'timestamp':
+            case 'timestamptz':
+                // the scale of temporal types is the fractional seconds precision
+                $precision = $scale;
+                break;
         }
 
         $editor

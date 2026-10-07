@@ -801,6 +801,14 @@ SQL;
             $tableEditor->addColumn(
                 (match ($type) {
                     Types::ENUM => $columnEditor->setValues(['foo', 'bar']),
+                    Types::DATETIME_MUTABLE,
+                    Types::DATETIME_IMMUTABLE,
+                    Types::DATETIME_UTC_MUTABLE,
+                    Types::DATETIME_UTC_IMMUTABLE,
+                    Types::DATETIMETZ_MUTABLE,
+                    Types::DATETIMETZ_IMMUTABLE,
+                    Types::TIME_MUTABLE,
+                    Types::TIME_IMMUTABLE => $columnEditor->setPrecision(6),
                     default => $columnEditor
                         ->setLength(8)
                         ->setPrecision(8)

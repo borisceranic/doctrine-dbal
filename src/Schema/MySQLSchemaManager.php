@@ -176,6 +176,12 @@ class MySQLSchemaManager extends AbstractSchemaManager
                 }
 
                 break;
+
+            case 'datetime':
+            case 'timestamp':
+            case 'time':
+                $precision = (int) $tableColumn['datetime_precision'];
+                break;
         }
 
         switch ($dbType) {
@@ -383,6 +389,7 @@ SELECT
        c.CHARACTER_OCTET_LENGTH,
        c.NUMERIC_PRECISION,
        c.NUMERIC_SCALE,
+       c.DATETIME_PRECISION,
        c.IS_NULLABLE        AS `null`,
        c.COLUMN_KEY         AS `key`,
        c.COLUMN_DEFAULT     AS `default`,

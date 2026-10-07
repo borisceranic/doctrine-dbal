@@ -181,10 +181,10 @@ class DB2Platform extends AbstractPlatform
                 'The "version" column platform option is deprecated.',
             );
 
-            return 'TIMESTAMP(0) WITH DEFAULT';
+            return 'TIMESTAMP(' . ($column['precision'] ?? 0) . ') WITH DEFAULT';
         }
 
-        return 'TIMESTAMP(0)';
+        return 'TIMESTAMP(' . ($column['precision'] ?? 0) . ')';
     }
 
     /**

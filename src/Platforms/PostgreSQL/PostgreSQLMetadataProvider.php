@@ -272,6 +272,14 @@ final readonly class PostgreSQLMetadataProvider implements MetadataProvider
                 }
 
                 break;
+
+            case 'timestamp':
+            case 'timestamptz':
+            case 'time':
+            case 'timetz':
+                // without a modifier, the precision is limited only by the storage format, i.e. microseconds
+                $editor->setPrecision($this->parseColumnTypeParameters($completeType)[0] ?? 6);
+                break;
         }
 
         if ($typeName === 'bpchar') {

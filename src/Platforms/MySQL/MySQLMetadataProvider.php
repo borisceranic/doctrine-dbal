@@ -168,6 +168,7 @@ final readonly class MySQLMetadataProvider implements MetadataProvider
                    c.CHARACTER_OCTET_LENGTH,
                    c.NUMERIC_PRECISION,
                    c.NUMERIC_SCALE,
+                   c.DATETIME_PRECISION,
                    c.IS_NULLABLE,
                    c.COLUMN_DEFAULT,
                    c.EXTRA,
@@ -208,6 +209,7 @@ final readonly class MySQLMetadataProvider implements MetadataProvider
             $characterOctetLength,
             $numericPrecision,
             $numericScale,
+            $datetimePrecision,
             $isNullable,
             $columnDefault,
             $extra,
@@ -272,6 +274,12 @@ final readonly class MySQLMetadataProvider implements MetadataProvider
                     $editor->setScale((int) $numericScale);
                 }
 
+                break;
+
+            case 'datetime':
+            case 'timestamp':
+            case 'time':
+                $editor->setPrecision((int) $datetimePrecision);
                 break;
         }
 

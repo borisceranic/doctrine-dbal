@@ -239,7 +239,7 @@ class OraclePlatform extends AbstractPlatform
      */
     public function getDateTimeTypeDeclarationSQL(array $column): string
     {
-        return 'TIMESTAMP(0)';
+        return 'TIMESTAMP(' . ($column['precision'] ?? 0) . ')';
     }
 
     /**
@@ -247,7 +247,7 @@ class OraclePlatform extends AbstractPlatform
      */
     public function getDateTimeTzTypeDeclarationSQL(array $column): string
     {
-        return 'TIMESTAMP(0) WITH TIME ZONE';
+        return 'TIMESTAMP(' . ($column['precision'] ?? 0) . ') WITH TIME ZONE';
     }
 
     /**
@@ -263,6 +263,11 @@ class OraclePlatform extends AbstractPlatform
      */
     public function getTimeTypeDeclarationSQL(array $column): string
     {
+        // DATE has no fractional seconds
+        if (isset($column['precision']) && $column['precision'] > 0) {
+            return 'TIMESTAMP(' . $column['precision'] . ')';
+        }
+
         return 'DATE';
     }
 
