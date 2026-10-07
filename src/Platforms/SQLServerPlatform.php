@@ -1117,6 +1117,11 @@ class SQLServerPlatform extends AbstractPlatform
         return 'Y-m-d H:i:s.u P';
     }
 
+    public function getDateTimeTzPreciseFormatString(): string
+    {
+        return 'Y-m-d H:i:s.u P';
+    }
+
     protected function initializeDoctrineTypeMappings(): void
     {
         $this->doctrineTypeMapping = [

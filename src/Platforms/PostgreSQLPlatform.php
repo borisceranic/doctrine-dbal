@@ -691,6 +691,11 @@ class PostgreSQLPlatform extends AbstractPlatform
         return 'Y-m-d H:i:sO';
     }
 
+    public function getDateTimeTzPreciseFormatString(): string
+    {
+        return 'Y-m-d H:i:s.uO';
+    }
+
     public function getEmptyIdentityInsertSQL(string $quotedTableName, string $quotedIdentifierColumnName): string
     {
         return 'INSERT INTO ' . $quotedTableName . ' (' . $quotedIdentifierColumnName . ') VALUES (DEFAULT)';

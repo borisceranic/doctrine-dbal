@@ -761,6 +761,11 @@ SQL,
         return 'Y-m-d H:i:sP';
     }
 
+    public function getDateTimeTzPreciseFormatString(): string
+    {
+        return 'Y-m-d H:i:s.uP';
+    }
+
     public function getDateFormatString(): string
     {
         return 'Y-m-d 00:00:00';
@@ -769,6 +774,11 @@ SQL,
     public function getTimeFormatString(): string
     {
         return '1900-01-01 H:i:s';
+    }
+
+    public function getTimePreciseFormatString(): string
+    {
+        return '1900-01-01 H:i:s.u';
     }
 
     public function getMaxIdentifierLength(): int

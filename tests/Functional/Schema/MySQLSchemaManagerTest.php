@@ -808,7 +808,13 @@ SQL;
                     Types::DATETIMETZ_MUTABLE,
                     Types::DATETIMETZ_IMMUTABLE,
                     Types::TIME_MUTABLE,
-                    Types::TIME_IMMUTABLE => $columnEditor->setPrecision(6),
+                    Types::TIME_IMMUTABLE,
+                    Types::DATETIME_PRECISE_MUTABLE,
+                    Types::DATETIME_PRECISE_IMMUTABLE,
+                    Types::DATETIMETZ_PRECISE_MUTABLE,
+                    Types::DATETIMETZ_PRECISE_IMMUTABLE,
+                    Types::TIME_PRECISE_MUTABLE,
+                    Types::TIME_PRECISE_IMMUTABLE => $columnEditor->setPrecision(6),
                     default => $columnEditor
                         ->setLength(8)
                         ->setPrecision(8)

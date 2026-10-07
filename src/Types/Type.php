@@ -35,10 +35,14 @@ abstract class Type
         Types::DATEINTERVAL           => DateIntervalType::class,
         Types::DATETIME_MUTABLE       => DateTimeType::class,
         Types::DATETIME_IMMUTABLE     => DateTimeImmutableType::class,
+        Types::DATETIME_PRECISE_MUTABLE => DateTimePreciseType::class,
+        Types::DATETIME_PRECISE_IMMUTABLE => DateTimePreciseImmutableType::class,
         Types::DATETIME_UTC_MUTABLE   => DateTimeUtcType::class,
         Types::DATETIME_UTC_IMMUTABLE => DateTimeUtcImmutableType::class,
         Types::DATETIMETZ_MUTABLE     => DateTimeTzType::class,
         Types::DATETIMETZ_IMMUTABLE   => DateTimeTzImmutableType::class,
+        Types::DATETIMETZ_PRECISE_MUTABLE => DateTimeTzPreciseType::class,
+        Types::DATETIMETZ_PRECISE_IMMUTABLE => DateTimeTzPreciseImmutableType::class,
         Types::DECIMAL                => DecimalType::class,
         Types::NUMBER                 => NumberType::class,
         Types::ENUM                   => EnumType::class,
@@ -56,6 +60,8 @@ abstract class Type
         Types::TEXT                   => TextType::class,
         Types::TIME_MUTABLE           => TimeType::class,
         Types::TIME_IMMUTABLE         => TimeImmutableType::class,
+        Types::TIME_PRECISE_MUTABLE => TimePreciseType::class,
+        Types::TIME_PRECISE_IMMUTABLE => TimePreciseImmutableType::class,
     ];
 
     private static ?TypeRegistry $typeRegistry = null;

@@ -8,6 +8,15 @@ awareness about deprecated code.
 
 # Upgrade to 4.6
 
+## Added date/time types with fractional seconds
+
+The `datetime_precise`, `datetimetz_precise` and `time_precise` types (and their `_immutable` variants) store
+microseconds. Their columns default to a fractional seconds precision of 6. The existing date/time types are unchanged
+and keep writing whole seconds.
+
+On Oracle, use `new InitializeSession(fractionalSeconds: true)` to make the session format timestamps with fractional
+seconds.
+
 ## BC BREAK: the `precision` of date/time columns is honoured
 
 The `precision` column option is now used as the fractional seconds precision of `datetime`, `datetimetz` and `time`

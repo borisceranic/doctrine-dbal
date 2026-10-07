@@ -401,6 +401,103 @@ The immutable variant of the ``time`` type.
 Values retrieved from the database are always converted to PHP's ``\DateTimeImmutable``
 object or ``null`` if no data is present.
 
+.. _datetime_precise:
+
+datetime_precise
+^^^^^^^^^^^^^^^^
+
+Like ``datetime``, but stores fractional seconds. Values are written with microseconds,
+and the column is declared with a fractional seconds precision of ``6`` unless the
+column definition sets a **precision** between ``0`` and ``6``.
+Values retrieved from the database are always converted to PHP's ``\DateTime`` object
+or ``null`` if no data is present.
+
+.. note::
+
+    The type always writes six fractional digits. If the column has a lower precision,
+    the database decides how to store the excess digits: MySQL, PostgreSQL, SQL Server
+    and Oracle round them, which can carry over into the next second, minute, day or year,
+    while MariaDB truncates them. On MySQL, enable the ``TIME_TRUNCATE_FRACTIONAL`` SQL mode
+    to truncate.
+
+datetime_precise_immutable
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The immutable variant of the ``datetime_precise`` type.
+Values retrieved from the database are always converted to PHP's ``\DateTimeImmutable``
+object or ``null`` if no data is present.
+
+datetimetz_precise
+^^^^^^^^^^^^^^^^^^
+
+Like ``datetimetz``, but stores fractional seconds. See ``datetime_precise``.
+
+datetimetz_precise_immutable
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The immutable variant of the ``datetimetz_precise`` type.
+
+time_precise
+^^^^^^^^^^^^
+
+Like ``time``, but stores fractional seconds. See ``datetime_precise``.
+Not supported on IBM Db2, whose ``TIME`` data type has no fractional seconds.
+
+time_precise_immutable
+^^^^^^^^^^^^^^^^^^^^^^
+
+The immutable variant of the ``time_precise`` type.
+
+Fractional seconds
+^^^^^^^^^^^^^^^^^^
+
+The ``*_precise`` types are declared as follows, where **p** is the **precision** of the
+column definition, ``6`` if not set:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Platform
+     - ``datetime_precise``
+     - ``datetimetz_precise``
+     - ``time_precise``
+   * - MySQL, MariaDB
+     - ``DATETIME(p)``
+     - ``DATETIME(p)`` [14]
+     - ``TIME(p)``
+   * - PostgreSQL
+     - ``TIMESTAMP(p) WITHOUT TIME ZONE``
+     - ``TIMESTAMP(p) WITH TIME ZONE``
+     - ``TIME(p) WITHOUT TIME ZONE``
+   * - SQL Server
+     - ``DATETIME2(p)``
+     - ``DATETIMEOFFSET(p)``
+     - ``TIME(p)``
+   * - Oracle
+     - ``TIMESTAMP(p)``
+     - ``TIMESTAMP(p) WITH TIME ZONE``
+     - ``TIMESTAMP(p)``
+   * - IBM Db2
+     - ``TIMESTAMP(p)``
+     - ``TIMESTAMP(p)`` [14]
+     - not supported
+   * - SQLite
+     - ``DATETIME``
+     - ``DATETIME`` [14]
+     - ``TIME``
+
+On Oracle, the session must format timestamps with fractional seconds. Pass
+``fractionalSeconds: true`` to the ``Doctrine\DBAL\Driver\OCI8\Middleware\InitializeSession``
+middleware, or set ``NLS_TIMESTAMP_FORMAT`` and ``NLS_TIMESTAMP_TZ_FORMAT`` with ``FF6`` yourself.
+
+The **precision** is also honoured by the ``datetime``, ``datetimetz`` and ``time`` types,
+which nevertheless write whole seconds. When comparing schemas, a column without a
+**precision** matches an existing column of any fractional seconds precision, except for
+the ``*_precise`` types, which default to ``6``.
+
+All date and time types accept values with fractional seconds when reading, and truncate
+digits beyond microseconds.
+
 dateinterval
 ^^^^^^^^^^^^
 

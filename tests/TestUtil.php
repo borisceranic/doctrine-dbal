@@ -159,7 +159,7 @@ class TestUtil
         switch ($driver) {
             case 'pdo_oci':
             case 'oci8':
-                $configuration->setMiddlewares([new InitializeSession()]);
+                $configuration->setMiddlewares([new InitializeSession(fractionalSeconds: true)]);
                 break;
             case 'pdo_sqlite':
             case 'sqlite3':

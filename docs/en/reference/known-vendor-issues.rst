@@ -35,6 +35,10 @@ without microseconds:
 -  DateTimeTz to ``TIMESTAMP(0) WITH TIME ZONE``
 -  Time to ``TIME(0) WITHOUT TIME ZONE``
 
+To store microseconds, use the ``datetime_precise``, ``datetimetz_precise``
+and ``time_precise`` types (and immutable variants), which create
+``TIMESTAMP(6)`` and ``TIME(6)`` columns.
+
 Timezones and DateTimeTz
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -125,6 +129,17 @@ Oracle does not save the actual Timezone Name but UTC-Offsets. The
 difference is subtle but can be potentially very nasty. Derick
 Rethans explains it very well
 `in a blog post of his <http://derickrethans.nl/storing-date-time-in-database.html>`_.
+
+Fractional seconds
+~~~~~~~~~~~~~~~~~~
+
+Oracle converts timestamps from and to strings according to the session's
+``NLS_TIMESTAMP_FORMAT`` and ``NLS_TIMESTAMP_TZ_FORMAT``. The formats set by the
+``InitializeSession`` middleware omit fractional seconds by default: writing a value
+with fractional seconds fails with ``ORA-01830`` and fractional seconds are dropped
+when reading. Create the middleware with ``new InitializeSession(fractionalSeconds: true)``
+to use the ``*_precise`` date and time types. Values read from ``TIMESTAMP(9)`` columns are
+truncated to microseconds.
 
 OCI-LOB instances
 ~~~~~~~~~~~~~~~~~

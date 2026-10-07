@@ -40,6 +40,7 @@ use Doctrine\DBAL\TransactionIsolationLevel;
 use Doctrine\DBAL\Types;
 use Doctrine\DBAL\Types\Exception\TypeNotFound;
 use Doctrine\DBAL\Types\Exception\TypesException;
+use Doctrine\DBAL\Types\FractionalSecondsType;
 use Doctrine\DBAL\Types\PhpDateTimeMappingType;
 use Doctrine\DBAL\Types\PhpTimeMappingType;
 use Doctrine\DBAL\Types\Type;
@@ -2252,6 +2253,24 @@ abstract class AbstractPlatform
 
     /**
      * Gets the format string, as accepted by the date() function, that describes
+     * the format of a stored datetime value with fractional seconds of this platform.
+     */
+    public function getDateTimePreciseFormatString(): string
+    {
+        return 'Y-m-d H:i:s.u';
+    }
+
+    /**
+     * Gets the format string, as accepted by the date() function, that describes
+     * the format of a stored datetime with timezone value with fractional seconds of this platform.
+     */
+    public function getDateTimeTzPreciseFormatString(): string
+    {
+        return 'Y-m-d H:i:s.u';
+    }
+
+    /**
+     * Gets the format string, as accepted by the date() function, that describes
      * the format of a stored date value of this platform.
      *
      * @return string The format string.
@@ -2270,6 +2289,15 @@ abstract class AbstractPlatform
     public function getTimeFormatString(): string
     {
         return 'H:i:s';
+    }
+
+    /**
+     * Gets the format string, as accepted by the date() function, that describes
+     * the format of a stored time value with fractional seconds of this platform.
+     */
+    public function getTimePreciseFormatString(): string
+    {
+        return 'H:i:s.u';
     }
 
     /**
@@ -2469,10 +2497,11 @@ abstract class AbstractPlatform
         $column1Array['columnDefinition'] = null;
         $column2Array['columnDefinition'] = null;
 
-        // an unspecified fractional seconds precision accepts whatever precision the other column has
-        if ($column1->getPrecision() === null && $this->isTemporalColumn($column2Array)) {
+        // an unspecified fractional seconds precision accepts whatever precision the other column has,
+        // unless the type has a default precision
+        if ($this->acceptsAnyPrecision($column1, $column1Array) && $this->isTemporalColumn($column2Array)) {
             $column1Array['precision'] = $column2->getPrecision();
-        } elseif ($column2->getPrecision() === null && $this->isTemporalColumn($column1Array)) {
+        } elseif ($this->acceptsAnyPrecision($column2, $column2Array) && $this->isTemporalColumn($column1Array)) {
             $column2Array['precision'] = $column1->getPrecision();
         }
 
@@ -2489,6 +2518,13 @@ abstract class AbstractPlatform
         }
 
         return $column1->getComment() === $column2->getComment();
+    }
+
+    /** @param ColumnProperties $columnArray */
+    private function acceptsAnyPrecision(Column $column, array $columnArray): bool
+    {
+        return $column->getPrecision() === null
+            && ! $this->getColumnTypeOrNull($columnArray) instanceof FractionalSecondsType;
     }
 
     /** @param ColumnProperties $column */
